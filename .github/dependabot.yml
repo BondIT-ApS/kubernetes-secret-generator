@@ -1,7 +1,7 @@
 version: 2
 
 updates:
-  # Scan for Python pip dependencies
+  # Python package dependencies
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
