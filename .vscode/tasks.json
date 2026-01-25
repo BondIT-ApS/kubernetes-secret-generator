@@ -1,0 +1,289 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // ==================== BACKEND TASKS ====================
+    {
+      "label": "🧱 Backend: Setup Virtual Environment",
+      "type": "shell",
+      "command": "python3 -m venv venv && . venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt && echo '✅ Virtual environment created with LEGO building blocks!'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "🚀 Backend: Run Flask App (Development)",
+      "type": "shell",
+      "command": ". venv/bin/activate && FLASK_ENV=development FLASK_DEBUG=true python app.py",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "🧪 Backend: Run Tests",
+      "type": "shell",
+      "command": ". venv/bin/activate && pytest tests/ -v",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "📊 Backend: Run Tests with Coverage",
+      "type": "shell",
+      "command": ". venv/bin/activate && pytest tests/ --cov=. --cov-report=html --cov-report=xml --cov-report=term-missing",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "🎨 Backend: Format Code (Black)",
+      "type": "shell",
+      "command": ". venv/bin/activate && black app.py tests/ --line-length=88",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "✨ Backend: Check Formatting",
+      "type": "shell",
+      "command": ". venv/bin/activate && black app.py tests/ --check --line-length=88",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "🔍 Backend: Lint (Pylint)",
+      "type": "shell",
+      "command": ". venv/bin/activate && pylint app.py --rcfile=.pylintrc",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "🛡️ Backend: Security Scan (Bandit)",
+      "type": "shell",
+      "command": ". venv/bin/activate && bandit -r app.py -x tests/",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "🔐 Backend: Dependency Security Check (Safety)",
+      "type": "shell",
+      "command": ". venv/bin/activate && safety scan",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    // ==================== DOCKER TASKS ====================
+    {
+      "label": "🐳 Docker: Build and Run",
+      "type": "shell",
+      "command": "docker-compose up -d --build",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "⏹️ Docker: Stop All Containers",
+      "type": "shell",
+      "command": "docker-compose down",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "📋 Docker: View Logs",
+      "type": "shell",
+      "command": "docker-compose logs -f",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "🏥 Docker: Health Check",
+      "type": "shell",
+      "command": "echo '🏥 Health Check - Testing Kubernetes Secret Generator...' && curl -s http://localhost:5050 && echo '\\n✅ Flask App health check complete!'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    // ==================== DEVELOPMENT TASKS ====================
+    {
+      "label": "🔧 Dev: Install Dependencies",
+      "type": "shell",
+      "command": ". venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "📦 Dev: Update Requirements",
+      "type": "shell",
+      "command": ". venv/bin/activate && pip freeze > requirements.txt",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "🧹 Dev: Clean Cache",
+      "type": "shell",
+      "command": "find . -type d -name '__pycache__' -exec rm -rf {} + && find . -name '*.pyc' -delete && rm -rf htmlcov .coverage .pytest_cache",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    // ==================== GITHUB ACTIONS TASKS ====================
+    {
+      "label": "🔧 Lint GitHub Actions Workflows",
+      "type": "shell",
+      "command": "actionlint .github/workflows/*.yml",
+      "problemMatcher": {
+        "owner": "actionlint",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^(.+?):(\\d+):(\\d+): (.+?) \\[(.+?)\\]$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4,
+          "code": 5
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    // ==================== COMPOSITE QUALITY CHECKS ====================
+    {
+      "label": "🧱 Backend: Full Quality Check",
+      "dependsOn": [
+        "✨ Backend: Check Formatting",
+        "🔍 Backend: Lint (Pylint)",
+        "🛡️ Backend: Security Scan (Bandit)",
+        "🔐 Backend: Dependency Security Check (Safety)"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "🏗️ Full Quality Check (All LEGO Pieces)",
+      "dependsOn": [
+        "🔧 Lint GitHub Actions Workflows",
+        "✨ Backend: Check Formatting",
+        "🔍 Backend: Lint (Pylint)",
+        "🛡️ Backend: Security Scan (Bandit)",
+        "🔐 Backend: Dependency Security Check (Safety)",
+        "📊 Backend: Run Tests with Coverage"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "🚀 Pre-Push Quality Gate",
+      "dependsOn": [
+        "🔧 Lint GitHub Actions Workflows",
+        "✨ Backend: Check Formatting",
+        "🔍 Backend: Lint (Pylint)",
+        "📊 Backend: Run Tests with Coverage",
+        "🛡️ Backend: Security Scan (Bandit)",
+        "🐳 Docker: Build and Run"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    },
+    // ==================== UTILITY TASKS ====================
+    {
+      "label": "🎨 Fix All Formatting",
+      "dependsOn": [
+        "🎨 Backend: Format Code (Black)"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}
