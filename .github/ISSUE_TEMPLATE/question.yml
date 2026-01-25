@@ -1,0 +1,112 @@
+name: ❓ Question
+description: Ask a question about usage, architecture, or functionality
+title: "[Question]: "
+labels: ["question", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # 🧱 Question - Let's Figure It Out Together!
+
+        Questions help us improve our documentation and understand what needs clarification. Like finding the right LEGO piece for your build, we're here to help you find the answers you need!
+
+        > **Note:** For general discussions, consider using [GitHub Discussions](https://github.com/BondIT-ApS/kubernetes-secret-generator/discussions) instead.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: ❓ Your Question
+      description: What would you like to know? Be as specific as possible.
+      placeholder: "Example: How can I use this tool with a CI/CD pipeline to automatically generate secrets?"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 🏷️ Question Category
+      description: What is your question about?
+      options:
+        - Usage / How-To
+        - Architecture / Design
+        - Configuration
+        - Integration / API
+        - Security / Best Practices
+        - Deployment
+        - Performance
+        - Docker / Containers
+        - Development / Contributing
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 📋 Context
+      description: Provide any relevant context about your use case or what you're trying to accomplish.
+      placeholder: |
+        Example: I'm setting up a GitOps workflow with ArgoCD and want to:
+        1. Generate secrets from .env files in my CI pipeline
+        2. Store them in a sealed secrets format
+        3. Apply them to my Kubernetes cluster
+    validations:
+      required: false
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: 🔍 What Have You Tried?
+      description: Have you already attempted to find an answer? What have you tried?
+      placeholder: |
+        - I checked the README but couldn't find...
+        - I tried setting up Docker Compose but encountered...
+        - I reviewed the examples in the documentation...
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 🖥️ Environment (if relevant)
+      description: If your question is environment-specific, provide details
+      value: |
+        - OS: [e.g., macOS 13.0, Ubuntu 22.04, Windows 11]
+        - Python Version: [e.g., 3.11.5]
+        - Docker Version: [e.g., 24.0.6]
+        - Deployment: [e.g., local, Docker, Kubernetes]
+      render: markdown
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 📎 Additional Information
+      description: Any additional information that might help us answer your question (screenshots, examples, links, etc.)
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Pre-submission Checklist
+      description: Please confirm you've completed these steps
+      options:
+        - label: I have read the [README](https://github.com/BondIT-ApS/kubernetes-secret-generator/blob/main/README.md)
+          required: true
+        - label: I have searched existing issues and discussions for similar questions
+          required: true
+        - label: My question is specific and clear
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        **Thanks for asking!** 🙏
+
+        Like finding the right building instructions, good questions help everyone learn. We'll do our best to provide a clear answer that helps you and others.
+
+        *Made with ❤️ by the BondIT team* 🇩🇰

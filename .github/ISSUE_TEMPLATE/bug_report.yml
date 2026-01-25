@@ -1,0 +1,122 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior - help us fix what's broken!
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # 🧱 Bug Report - Something Doesn't Fit!
+
+        Thanks for taking the time to report a bug! Like finding a LEGO brick that doesn't snap into place, bugs help us improve the build. Please fill out the form below to help us understand and fix the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 🎯 Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: "Example: When I paste .env content with special characters, the secret generation fails..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 📋 Steps to Reproduce
+      description: How can we reproduce this issue? Please be as detailed as possible.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Enter the following content '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ Expected Behavior
+      description: What did you expect to happen?
+      placeholder: "The secret should be generated with properly encoded values..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: ❌ Actual Behavior
+      description: What actually happened?
+      placeholder: "Instead, I received an error message..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 🔥 Severity
+      description: How severe is this bug?
+      options:
+        - Critical - Application crashes or data loss
+        - High - Major feature broken
+        - Medium - Feature partially broken
+        - Low - Minor issue or cosmetic
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 🖥️ Environment
+      description: Please provide details about your environment
+      value: |
+        - OS: [e.g., macOS 13.0, Ubuntu 22.04, Windows 11]
+        - Python Version: [e.g., 3.11.5]
+        - Docker Version: [e.g., 24.0.6]
+        - Browser: [e.g., Chrome 120, Firefox 121]
+        - Deployment Method: [e.g., Docker Compose, local Python, Kubernetes]
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📜 Relevant Logs
+      description: Please copy and paste any relevant log output
+      placeholder: Paste logs here...
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 📎 Additional Context
+      description: Add any other context about the problem (screenshots, sample files, etc.)
+      placeholder: Any additional information that might help...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Pre-submission Checklist
+      description: Please confirm you've completed these steps
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have provided all the requested information above
+          required: true
+        - label: I have read the [Contributing Guidelines](https://github.com/BondIT-ApS/kubernetes-secret-generator/blob/main/CONTRIBUTING.md)
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        **Thank you for helping us improve!** 🙏
+
+        Like fixing a misaligned LEGO brick, your bug report helps us build better software. We'll investigate and respond as soon as possible.
+
+        *Made with ❤️ by the BondIT team* 🇩🇰

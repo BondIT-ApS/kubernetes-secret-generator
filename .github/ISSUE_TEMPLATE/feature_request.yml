@@ -1,0 +1,157 @@
+name: 💡 Feature Request
+description: Suggest a new feature or enhancement - help us build something amazing!
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # 🧱 Feature Request - Let's Build Something New!
+
+        Got an idea for a new LEGO brick to add to our set? We'd love to hear it! Feature requests help us understand what the community needs and guide our development roadmap.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 🎯 Feature Summary
+      description: A clear and concise description of the feature you'd like to see.
+      placeholder: "Example: Add support for YAML output format in addition to JSON..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 🔧 Problem Statement
+      description: What problem does this feature solve? Is your feature request related to a problem?
+      placeholder: "Example: I'm always frustrated when I need to convert the JSON output to YAML manually for my GitOps workflow..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 💭 Proposed Solution
+      description: Describe the solution you'd like to see implemented.
+      placeholder: "Example: Add a format selector (JSON/YAML) on the web UI that changes the output format..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: "Example: I currently use yq to convert JSON to YAML, but built-in support would be more convenient..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 📊 Priority
+      description: How important is this feature to you?
+      options:
+        - Critical - Blocking my workflow
+        - High - Would significantly improve my workflow
+        - Medium - Nice to have
+        - Low - Minor enhancement
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 🏷️ Feature Category
+      description: Which category does this feature fall into?
+      options:
+        - User Interface / UX
+        - Core Functionality / Parsing
+        - Security & Validation
+        - Output Formats
+        - API / Integration
+        - Performance
+        - Documentation
+        - DevOps / CI/CD
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefits
+    attributes:
+      label: 🎁 Benefits
+      description: What benefits would this feature provide to users?
+      placeholder: |
+        - Reduces manual conversion steps
+        - Improves workflow efficiency
+        - Aligns with GitOps best practices
+    validations:
+      required: false
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: 🛠️ Implementation Ideas
+      description: If you have ideas about how this could be implemented, share them here (optional).
+      placeholder: |
+        - Add a dropdown in the UI for format selection
+        - Use PyYAML library for YAML generation
+        - Add /download?format=yaml endpoint
+    validations:
+      required: false
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: 📝 Usage Examples
+      description: Provide examples of how you would use this feature (optional).
+      placeholder: |
+        ```yaml
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: my-secret
+        type: Opaque
+        data:
+          KEY: base64encodedvalue
+        ```
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: 🤝 Contribution
+      description: Would you be willing to contribute to implementing this feature?
+      options:
+        - label: I'd be willing to submit a PR for this feature
+          required: false
+        - label: I'd be willing to help test this feature
+          required: false
+        - label: I'd be willing to help with documentation
+          required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Pre-submission Checklist
+      description: Please confirm you've completed these steps
+      options:
+        - label: I have searched existing issues and feature requests to ensure this is not a duplicate
+          required: true
+        - label: I have checked the [Roadmap](https://github.com/BondIT-ApS/kubernetes-secret-generator/blob/main/README.md#-roadmap) to see if this is already planned
+          required: true
+        - label: I have provided all the requested information above
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        **Thank you for your suggestion!** 🙏
+
+        Like adding a new type of LEGO brick to the collection, your feature request helps us expand what's possible. We'll review your suggestion and discuss it with the community.
+
+        *Made with ❤️ by the BondIT team* 🇩🇰

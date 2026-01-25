@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🤝 Community Support
+    url: https://github.com/BondIT-ApS/kubernetes-secret-generator/discussions
+    about: Join our discussions for questions and community support
+  - name: 📚 Documentation
+    url: https://github.com/BondIT-ApS/kubernetes-secret-generator/blob/main/README.md
+    about: Read our comprehensive documentation and usage guides
+  - name: 🌐 BondIT ApS Website
+    url: https://bondit.services
+    about: Visit our company website

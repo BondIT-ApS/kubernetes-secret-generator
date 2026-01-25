@@ -1,0 +1,155 @@
+name: 🔒 Security Vulnerability
+description: Report a security vulnerability (privately if sensitive)
+title: "[Security]: "
+labels: ["security", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # 🔒 Security Vulnerability Report
+
+        **⚠️ IMPORTANT: For sensitive security issues, please DO NOT use this public form.**
+
+        Instead, please report sensitive vulnerabilities privately:
+        - Use GitHub's [Private Security Advisories](https://github.com/BondIT-ApS/kubernetes-secret-generator/security/advisories/new)
+        - Or email us directly through GitHub Issues (create a private issue)
+
+        This public form should only be used for:
+        - Non-critical security improvements
+        - Security-related feature requests
+        - General security discussions
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 🔥 Severity Assessment
+      description: How would you rate the severity of this security concern?
+      options:
+        - Low - Minor security improvement
+        - Medium - Security enhancement recommended
+        - High - Potential security risk (use private reporting!)
+        - Critical - Active vulnerability (use private reporting!)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 🎯 Security Concern Description
+      description: Describe the security concern or vulnerability (avoid disclosing exploit details publicly).
+      placeholder: "Example: The rate limiting mechanism could be bypassed by..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 🏷️ Security Category
+      description: Which category does this security concern fall into?
+      options:
+        - Input Validation / Injection
+        - Authentication / Authorization
+        - Cryptography
+        - Rate Limiting / DoS
+        - File Upload / Path Traversal
+        - Dependencies / Supply Chain
+        - Information Disclosure
+        - Configuration / Deployment
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: 💥 Potential Impact
+      description: What is the potential impact if this security concern is not addressed?
+      placeholder: |
+        - Could allow unauthorized access to...
+        - May expose sensitive information...
+        - Potential for denial of service...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 📋 Steps to Reproduce (if applicable)
+      description: |
+        **CAUTION:** Only include reproduction steps if they don't reveal a critical exploit.
+        For critical vulnerabilities, use private reporting instead.
+      placeholder: |
+        1. Configure the application with...
+        2. Send a request with...
+        3. Observe that...
+    validations:
+      required: false
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: 🛡️ Suggested Mitigation
+      description: If you have ideas for how to address this security concern, share them here.
+      placeholder: |
+        - Add input validation for...
+        - Implement additional checks for...
+        - Update dependency X to version Y...
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 🖥️ Affected Environment
+      description: Which deployment environments or configurations are affected?
+      value: |
+        - Deployment Method: [e.g., Docker, local Python, Kubernetes]
+        - Version: [e.g., latest, v25.1.1]
+        - Configuration: [e.g., default, custom rate limits]
+      render: markdown
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: disclosure
+    attributes:
+      label: 🤝 Responsible Disclosure
+      description: Security reporting commitments
+      options:
+        - label: I understand that critical vulnerabilities should be reported privately
+          required: true
+        - label: I will not publicly disclose exploit details until the issue is addressed
+          required: true
+        - label: I have read the project's security guidelines
+          required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Pre-submission Checklist
+      description: Please confirm you've completed these steps
+      options:
+        - label: This is not a critical vulnerability requiring private disclosure
+          required: true
+        - label: I have searched existing security issues to ensure this is not a duplicate
+          required: true
+        - label: I have provided sufficient information without revealing exploit details
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        **Thank you for helping keep our project secure!** 🙏
+
+        Like ensuring every LEGO brick is safe and sturdy, security is fundamental to building trust. We take all security concerns seriously and will respond promptly.
+
+        ### Our Security Commitment
+
+        - We will acknowledge your report within 48 hours
+        - We will provide regular updates on remediation progress
+        - We will credit you for responsible disclosure (if desired)
+        - We follow industry best practices for security response
+
+        *Made with ❤️ by the BondIT team* 🇩🇰
