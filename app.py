@@ -158,7 +158,7 @@ def _is_valid_k8s_key(key):
 def index():
     json_output = None
     file_download = None
-    secret_name = ""
+    secret_name = ""  # nosec B105 - Not a password, just form field initialization
     namespace = ""
 
     if request.method == "POST":
@@ -219,4 +219,5 @@ def download():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    # Binding to all interfaces is intentional for Docker containerization
+    app.run(host="0.0.0.0", port=5000, debug=False)  # nosec B104
