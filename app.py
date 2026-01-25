@@ -1,12 +1,104 @@
 import base64
 import json
+import logging
+import os
 import re
+from datetime import datetime, timezone
 from io import BytesIO
 
 from flask import Flask, request, render_template, send_file
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
 from werkzeug.utils import secure_filename
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
+
+# Flask app initialization
 app = Flask(__name__)
+
+# Configuration from environment variables
+app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_CONTENT_LENGTH', 1024 * 1024))  # Default 1MB
+RATE_LIMIT = os.environ.get('RATE_LIMIT', '10 per minute')
+ENABLE_SECURITY_HEADERS = os.environ.get('ENABLE_SECURITY_HEADERS', 'true').lower() == 'true'
+
+# Security Headers with Flask-Talisman
+if ENABLE_SECURITY_HEADERS:
+    # Content Security Policy
+    csp = {
+        'default-src': "'self'",
+        'style-src': ["'self'", "'unsafe-inline'"],  # Allow inline styles
+        'img-src': ["'self'", 'https://bondit.services', 'data:'],
+        'script-src': "'self'",
+    }
+
+    Talisman(
+        app,
+        force_https=False,  # Don't force HTTPS (may be behind reverse proxy)
+        strict_transport_security=True,
+        strict_transport_security_max_age=31536000,  # 1 year
+        content_security_policy=csp,
+        content_security_policy_nonce_in=['script-src'],
+        frame_options='DENY',
+        referrer_policy='strict-origin-when-cross-origin',
+    )
+    logger.info("Security headers enabled")
+
+# Rate Limiting
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=[RATE_LIMIT],
+    storage_uri="memory://",
+)
+logger.info("Rate limiting enabled: %s", RATE_LIMIT)
+
+
+# Error handlers
+@app.errorhandler(413)
+def request_entity_too_large(error):  # pylint: disable=unused-argument
+    """Handle file size limit exceeded."""
+    max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
+    logger.warning(
+        "Request entity too large",
+        extra={
+            "action": "request_too_large",
+            "ip": get_remote_address(),
+            "max_size_mb": max_size_mb,
+        }
+    )
+    return (
+        render_template(
+            "error.html",
+            error_message=f"File size exceeds maximum allowed size of {max_size_mb:.1f} MB",
+        ),
+        413,
+    )
+
+
+@app.errorhandler(429)
+def ratelimit_handler(error):  # pylint: disable=unused-argument
+    """Handle rate limit exceeded."""
+    logger.warning(
+        "Rate limit exceeded",
+        extra={
+            "action": "rate_limit_exceeded",
+            "ip": get_remote_address(),
+        }
+    )
+    return (
+        render_template(
+            "error.html",
+            error_message="Rate limit exceeded. Please try again later.",
+        ),
+        429,
+    )
 
 
 def parse_env(env_content):
@@ -155,6 +247,7 @@ def _is_valid_k8s_key(key):
 
 
 @app.route("/", methods=["GET", "POST"])
+@limiter.limit("20 per minute")  # More lenient for main page
 def index():
     json_output = None
     file_download = None
@@ -165,6 +258,19 @@ def index():
         env_content = request.form.get("env_content", "")
         secret_name = request.form.get("secret_name", "my-secret")
         namespace = request.form.get("namespace", "default")
+
+        # Audit log: Secret generation request
+        logger.info(
+            "Secret generation request",
+            extra={
+                "action": "generate_secret",
+                "ip": get_remote_address(),
+                "secret_name": secret_name,
+                "namespace": namespace,
+                "content_length": len(env_content),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
 
         env_dict = parse_env(env_content)
         secret_json = {
@@ -179,6 +285,17 @@ def index():
         file_download = BytesIO(json_output.encode())
         file_download.seek(0)
 
+        # Audit log: Success
+        logger.info(
+            "Secret generated successfully",
+            extra={
+                "action": "generate_secret_success",
+                "ip": get_remote_address(),
+                "secret_name": secret_name,
+                "keys_count": len(env_dict),
+            }
+        )
+
     return render_template(
         "index.html",
         json_output=json_output,
@@ -188,12 +305,26 @@ def index():
 
 
 @app.route("/download", methods=["POST"])
+@limiter.limit("10 per minute")  # Stricter limit for downloads
 def download():
     env_content = request.form.get("env_content", "")
     secret_name = secure_filename(
         request.form.get("secret_name", "my-secret")
     )  # Sanitize the secret name
     namespace = request.form.get("namespace", "default")
+
+    # Audit log: Download request
+    logger.info(
+        "Secret download request",
+        extra={
+            "action": "download_secret",
+            "ip": get_remote_address(),
+            "secret_name": secret_name,
+            "namespace": namespace,
+            "content_length": len(env_content),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
 
     env_dict = parse_env(env_content)
     secret_json = {
@@ -210,6 +341,18 @@ def download():
 
     # Ensure the filename is safe
     safe_filename = secure_filename(f"{secret_name}.json")
+
+    # Audit log: Success
+    logger.info(
+        "Secret downloaded successfully",
+        extra={
+            "action": "download_secret_success",
+            "ip": get_remote_address(),
+            "secret_name": secret_name,
+            "filename": safe_filename,
+        }
+    )
+
     return send_file(
         file_download,
         mimetype="application/json",
