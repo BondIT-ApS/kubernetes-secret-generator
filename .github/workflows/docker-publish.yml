@@ -28,12 +28,12 @@ jobs:
         id: filter
         run: |
           if [ "${{ github.event_name }}" == "schedule" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "backend=true" >> "$GITHUB_OUTPUT"
           else
             if git diff --name-only HEAD~1 HEAD | grep -E '\.(py|txt)$|Dockerfile|requirements\.txt' > /dev/null; then
-              echo "backend=true" >> $GITHUB_OUTPUT
+              echo "backend=true" >> "$GITHUB_OUTPUT"
             else
-              echo "backend=false" >> $GITHUB_OUTPUT
+              echo "backend=false" >> "$GITHUB_OUTPUT"
             fi
           fi
 
@@ -160,18 +160,20 @@ jobs:
 
       - name: Generate build summary
         run: |
-          echo "## 🐳 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Image built and pushed successfully!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
-          echo "- \`maboni82/kubernetes-secret-generator:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`maboni82/kubernetes-secret-generator:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`maboni82/kubernetes-secret-generator:${{ steps.version.outputs.year }}.${{ steps.version.outputs.month }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**SBOM & Provenance:** Included" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🐳 Docker Build Summary"
+            echo ""
+            echo "✅ Image built and pushed successfully!"
+            echo ""
+            echo "**Tags:**"
+            echo "- \`maboni82/kubernetes-secret-generator:latest\`"
+            echo "- \`maboni82/kubernetes-secret-generator:${{ steps.version.outputs.version }}\`"
+            echo "- \`maboni82/kubernetes-secret-generator:${{ steps.version.outputs.year }}.${{ steps.version.outputs.month }}\`"
+            echo ""
+            echo "**Platforms:** linux/amd64, linux/arm64"
+            echo ""
+            echo "**SBOM & Provenance:** Included"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   weekly-security-scan:
     name: 🔐 Weekly Security Scan

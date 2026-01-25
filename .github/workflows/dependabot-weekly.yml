@@ -144,13 +144,15 @@ jobs:
 
       - name: Security scan summary
         run: |
-          echo "## 🛡️ Weekly Security Scan" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Security scans completed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Reports uploaded as artifacts**" >> $GITHUB_STEP_SUMMARY
-          echo "- Bandit JSON report" >> $GITHUB_STEP_SUMMARY
-          echo "- Bandit text report" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🛡️ Weekly Security Scan"
+            echo ""
+            echo "✅ Security scans completed"
+            echo ""
+            echo "**Reports uploaded as artifacts**"
+            echo "- Bandit JSON report"
+            echo "- Bandit text report"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   maintenance-summary:
     name: 📊 Maintenance Summary
@@ -160,10 +162,12 @@ jobs:
     steps:
       - name: Generate summary
         run: |
-          echo "## 🔐 Weekly Maintenance Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Jobs Completed:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Dependency Check: ${{ needs.dependency-check.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Security Audit: ${{ needs.security-audit.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Next scheduled run:** Next Monday at 21:12 CET" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🔐 Weekly Maintenance Summary"
+            echo ""
+            echo "**Jobs Completed:**"
+            echo "- Dependency Check: ${{ needs.dependency-check.result }}"
+            echo "- Security Audit: ${{ needs.security-audit.result }}"
+            echo ""
+            echo "**Next scheduled run:** Next Monday at 21:12 CET"
+          } >> "$GITHUB_STEP_SUMMARY"
