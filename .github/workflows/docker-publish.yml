@@ -107,6 +107,8 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -129,10 +131,13 @@ jobs:
       - name: Generate semantic version tag
         id: version
         run: |
-          # Semantic versioning: YY.M.PATCH
+          # Semantic versioning: YY.M.PATCH (patch resets to 1 each month)
           YEAR=$(date +'%y')
           MONTH=$(date +'%-m')
-          PATCH=${{ github.run_number }}
+
+          # Count existing tags for current month and increment
+          EXISTING_TAGS=$(git tag -l "${YEAR}.${MONTH}.*" | wc -l)
+          PATCH=$((EXISTING_TAGS + 1))
 
           VERSION="${YEAR}.${MONTH}.${PATCH}"
 
@@ -142,7 +147,7 @@ jobs:
             echo "month=${MONTH}"
           } >> "$GITHUB_OUTPUT"
 
-          echo "Generated version: ${VERSION}"
+          echo "Generated version: ${VERSION} (${EXISTING_TAGS} existing tags for ${YEAR}.${MONTH})"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
