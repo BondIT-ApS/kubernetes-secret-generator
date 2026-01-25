@@ -1,10 +1,10 @@
-from flask import Flask, request, render_template, jsonify, send_file
-from werkzeug.utils import secure_filename
 import base64
-import re
 import json
-import os
+import re
 from io import BytesIO
+
+from flask import Flask, request, render_template, send_file
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
@@ -49,7 +49,8 @@ def parse_env(env_content):
                 # Validate Kubernetes secret key naming
                 if not _is_valid_k8s_key(key):
                     errors.append(
-                        f"Line {line_num}: Invalid Kubernetes secret key '{key}'. Keys must contain only alphanumeric characters, '.', '-', and '_'"
+                        f"Line {line_num}: Invalid Kubernetes secret key '{key}'. "
+                        f"Keys must contain only alphanumeric characters, '.', '-', and '_'"
                     )
                     continue
 
@@ -77,7 +78,7 @@ def _remove_inline_comments(line):
 
     result = []
 
-    for i, char in enumerate(line):
+    for char in line:
         if escaped:
             result.append(char)
             escaped = False
@@ -134,7 +135,7 @@ def _parse_env_line(line):
             return key, value
 
     # If no pattern matches, it's an invalid line
-    raise ValueError(f"Invalid environment variable format")
+    raise ValueError("Invalid environment variable format")
 
 
 def _is_valid_k8s_key(key):
