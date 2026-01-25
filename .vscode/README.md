@@ -65,9 +65,10 @@ This folder contains team-shared VSCode configuration for the Kubernetes Secret 
 - **🔍 Backend: Lint (Pylint)** - Run code quality checks
 - **🛡️ Backend: Security Scan (Bandit)** - Security vulnerability analysis
 - **🔐 Backend: Dependency Security Check (Safety)** - Check dependencies for vulnerabilities
+- **🔧 Lint GitHub Actions Workflows** - Validate workflow files with actionlint
 - **🐳 Docker: Build and Run** - Build and start containers
 - **🏥 Docker: Health Check** - Test application endpoints
-- **🚀 Pre-Push Quality Gate** - Run all quality checks before pushing
+- **🚀 Pre-Push Quality Gate** - Run all quality checks including actionlint before pushing
 
 ## 🔄 Updating Configuration
 

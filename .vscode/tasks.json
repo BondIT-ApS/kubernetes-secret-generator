@@ -262,6 +262,7 @@
     {
       "label": "🚀 Pre-Push Quality Gate",
       "dependsOn": [
+        "🔧 Lint GitHub Actions Workflows",
         "✨ Backend: Check Formatting",
         "🔍 Backend: Lint (Pylint)",
         "📊 Backend: Run Tests with Coverage",
