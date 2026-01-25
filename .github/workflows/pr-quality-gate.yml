@@ -1,0 +1,244 @@
+name: 🧱 PR Quality Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  discover-changes:
+    name: 🔍 Discover Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend_changed: ${{ steps.filter.outputs.backend }}
+      workflows_changed: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed files
+        id: filter
+        run: |
+          # Check for backend changes
+          if git diff --name-only origin/main...HEAD | grep -E '\.(py|txt)$|Dockerfile|requirements\.txt' > /dev/null; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+          else
+            echo "backend=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Check for workflow changes
+          if git diff --name-only origin/main...HEAD | grep -E '\.github/workflows' > /dev/null; then
+            echo "workflows=true" >> $GITHUB_OUTPUT
+          else
+            echo "workflows=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post complexity comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const backend = '${{ steps.filter.outputs.backend }}' === 'true';
+            const workflows = '${{ steps.filter.outputs.workflows }}' === 'true';
+
+            let message = '## 🧱 LEGO Building Block Analysis\n\n';
+            message += '**Changed Components:**\n';
+            message += backend ? '- ✅ Backend (Python)\n' : '- ⬜ Backend\n';
+            message += workflows ? '- ✅ Workflows\n' : '- ⬜ Workflows\n';
+            message += '\n**Quality checks will run for changed components only.**';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              body: message
+            });
+
+  lint-backend:
+    name: 🔍 Lint Backend
+    runs-on: ubuntu-latest
+    needs: discover-changes
+    if: needs.discover-changes.outputs.backend_changed == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint
+          pip install -r requirements.txt
+
+      - name: Run Pylint
+        run: |
+          pylint app.py --rcfile=.pylintrc
+
+  lint-workflows:
+    name: 🔧 Lint Workflows
+    runs-on: ubuntu-latest
+    needs: discover-changes
+    if: needs.discover-changes.outputs.workflows_changed == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v1
+        with:
+          files: '.github/workflows/*.yml'
+
+  quality-backend:
+    name: 🧪 Quality & Security (Backend)
+    runs-on: ubuntu-latest
+    needs: discover-changes
+    if: needs.discover-changes.outputs.backend_changed == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ --cov=. --cov-report=xml --cov-report=html --cov-report=term-missing --cov-fail-under=70
+        continue-on-error: false
+
+      - name: Upload coverage to CodeCov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Run Bandit security scan
+        run: |
+          bandit -r app.py -f json -o bandit-report.json || true
+          bandit -r app.py -f txt -o bandit-report.txt || true
+        continue-on-error: true
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-security-report
+          path: |
+            bandit-report.json
+            bandit-report.txt
+          retention-days: 90
+
+      - name: Upload test coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            htmlcov/
+            coverage.xml
+          retention-days: 90
+
+  codeql-analysis:
+    name: 🔐 CodeQL Analysis
+    runs-on: ubuntu-latest
+    needs: discover-changes
+    if: needs.discover-changes.outputs.backend_changed == 'true'
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  build-test-backend:
+    name: 🐳 Build & Integration Test
+    runs-on: ubuntu-latest
+    needs: [lint-backend, quality-backend]
+    if: |
+      always() &&
+      needs.discover-changes.outputs.backend_changed == 'true' &&
+      needs.lint-backend.result == 'success' &&
+      needs.quality-backend.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t kubernetes-secret-generator:test .
+
+      - name: Run container
+        run: |
+          docker run -d --name test-app -p 5000:5000 kubernetes-secret-generator:test
+          sleep 5
+
+      - name: Test container health
+        run: |
+          curl -f http://localhost:5000 || (docker logs test-app && exit 1)
+
+      - name: Stop container
+        if: always()
+        run: |
+          docker stop test-app || true
+          docker rm test-app || true
+
+  quality-gate-summary:
+    name: 📊 Quality Gate Summary
+    runs-on: ubuntu-latest
+    needs: [discover-changes, lint-backend, lint-workflows, quality-backend, codeql-analysis, build-test-backend]
+    if: always()
+    steps:
+      - name: Post summary comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const backend_changed = '${{ needs.discover-changes.outputs.backend_changed }}' === 'true';
+            const workflows_changed = '${{ needs.discover-changes.outputs.workflows_changed }}' === 'true';
+
+            const results = {
+              'Lint Backend': backend_changed ? '${{ needs.lint-backend.result }}' : 'skipped',
+              'Lint Workflows': workflows_changed ? '${{ needs.lint-workflows.result }}' : 'skipped',
+              'Quality & Security': backend_changed ? '${{ needs.quality-backend.result }}' : 'skipped',
+              'CodeQL Analysis': backend_changed ? '${{ needs.codeql-analysis.result }}' : 'skipped',
+              'Build & Integration': backend_changed ? '${{ needs.build-test-backend.result }}' : 'skipped'
+            };
+
+            let message = '## 🏗️ Quality Gate Summary\n\n';
+            message += '| Check | Status |\n';
+            message += '|-------|--------|\n';
+
+            for (const [check, result] of Object.entries(results)) {
+              const icon = result === 'success' ? '✅' :
+                          result === 'failure' ? '❌' :
+                          result === 'skipped' ? '⬜' : '⚠️';
+              message += `| ${check} | ${icon} ${result} |\n`;
+            }
+
+            const allPassed = Object.values(results).every(r => r === 'success' || r === 'skipped');
+            message += '\n' + (allPassed ? '### ✅ All quality checks passed! Ready to merge.' : '### ❌ Some checks failed. Please review and fix issues.');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              body: message
+            });
