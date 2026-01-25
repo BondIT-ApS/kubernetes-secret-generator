@@ -53,10 +53,10 @@ jobs:
             message += workflows ? '- ✅ Workflows\n' : '- ⬜ Workflows\n';
             message += '\n**Quality checks will run for changed components only.**';
 
-            github.rest.issues.createComment({
-              issue_number: context.payload.pull_request.number,
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
               owner: context.repo.owner,
-              repo: context.repo.name,
+              repo: context.repo.repo,
               body: message
             });
 
@@ -236,9 +236,9 @@ jobs:
             const allPassed = Object.values(results).every(r => r === 'success' || r === 'skipped');
             message += '\n' + (allPassed ? '### ✅ All quality checks passed! Ready to merge.' : '### ❌ Some checks failed. Please review and fix issues.');
 
-            github.rest.issues.createComment({
-              issue_number: context.payload.pull_request.number,
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
               owner: context.repo.owner,
-              repo: context.repo.name,
+              repo: context.repo.repo,
               body: message
             });
