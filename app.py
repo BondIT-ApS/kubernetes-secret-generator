@@ -349,7 +349,7 @@ def download():
             "action": "download_secret_success",
             "ip": get_remote_address(),
             "secret_name": secret_name,
-            "filename": safe_filename,
+            "download_filename": safe_filename,
         }
     )
 
