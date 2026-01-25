@@ -1,12 +1,13 @@
 # 🧱 Kubernetes Secret Generator
 
-![Build Status](https://img.shields.io/github/actions/workflow/status/BondIT-ApS/kubernetes-secret-generator/docker-publish.yml?branch=main&style=for-the-badge&logo=github)
-![License](https://img.shields.io/github/license/BondIT-ApS/kubernetes-secret-generator?style=for-the-badge)
-![Code Coverage](https://img.shields.io/codecov/c/github/BondIT-ApS/kubernetes-secret-generator?style=for-the-badge&logo=codecov)
-![Repo Size](https://img.shields.io/github/repo-size/BondIT-ApS/kubernetes-secret-generator?style=for-the-badge)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/BondIT-ApS/kubernetes-secret-generator/docker-publish.yml?branch=main&style=for-the-badge&logo=github)](https://github.com/BondIT-ApS/kubernetes-secret-generator/actions)
+[![License](https://img.shields.io/github/license/BondIT-ApS/kubernetes-secret-generator?style=for-the-badge)](https://github.com/BondIT-ApS/kubernetes-secret-generator/blob/main/LICENSE)
+[![GitHub repo size](https://img.shields.io/github/repo-size/BondIT-ApS/kubernetes-secret-generator?style=for-the-badge)](https://github.com/BondIT-ApS/kubernetes-secret-generator)
+[![Made in Denmark](https://img.shields.io/badge/Made%20in-Denmark-red?style=for-the-badge)](https://bondit.dk)
+[![codecov](https://img.shields.io/codecov/c/github/BondIT-ApS/kubernetes-secret-generator?style=for-the-badge&logo=codecov)](https://codecov.io/gh/BondIT-ApS/kubernetes-secret-generator)
 
-[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-kubernetes--secret--generator-blue?logo=docker&style=for-the-badge)](https://hub.docker.com/r/maboni82/kubernetes-secret-generator)
 [![Docker Pulls](https://img.shields.io/docker/pulls/maboni82/kubernetes-secret-generator?style=for-the-badge&logo=docker)](https://hub.docker.com/r/maboni82/kubernetes-secret-generator)
+[![GitHub Release](https://img.shields.io/github/v/release/BondIT-ApS/kubernetes-secret-generator?style=for-the-badge&logo=github&label=release)](https://github.com/BondIT-ApS/kubernetes-secret-generator/releases/latest)
 
 > **Like building with LEGO blocks** - snap your environment variables into Kubernetes Secrets with perfect precision! 🎯
 
@@ -285,6 +286,7 @@ See [`.vscode/README.md`](.vscode/README.md) for full details.
 ### CI/CD Pipeline
 
 **Pull Request Quality Gate:**
+- ✅ Workflow linting (actionlint - all workflows must pass)
 - ✅ Pylint linting (must score 10/10)
 - ✅ Pytest with 70% coverage requirement
 - ✅ Bandit security scanning
@@ -308,6 +310,7 @@ We welcome contributions! Before submitting a PR:
    ```bash
    # Via VSCode task: "🚀 Pre-Push Quality Gate"
    # Or manually:
+   actionlint .github/workflows/*.yml && \
    black app.py tests/ --check && \
    pylint app.py && \
    pytest tests/ --cov=. --cov-fail-under=70 && \
