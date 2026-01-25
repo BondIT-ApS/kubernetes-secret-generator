@@ -54,7 +54,7 @@ jobs:
             message += '\n**Quality checks will run for changed components only.**';
 
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.name,
               body: message
@@ -237,7 +237,7 @@ jobs:
             message += '\n' + (allPassed ? '### ✅ All quality checks passed! Ready to merge.' : '### ❌ Some checks failed. Please review and fix issues.');
 
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.name,
               body: message
