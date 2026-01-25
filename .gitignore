@@ -131,6 +131,7 @@ Thumbs.db
 
 # AI Agent configuration (could contain project-specific credentials)
 WARP.md
+AGENTS.md
 CLAUDE.md
 .claude/
 CURSOR.md
