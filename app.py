@@ -15,8 +15,8 @@ from werkzeug.utils import secure_filename
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -24,18 +24,22 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 # Configuration from environment variables
-app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_CONTENT_LENGTH', 1024 * 1024))  # Default 1MB
-RATE_LIMIT = os.environ.get('RATE_LIMIT', '10 per minute')
-ENABLE_SECURITY_HEADERS = os.environ.get('ENABLE_SECURITY_HEADERS', 'true').lower() == 'true'
+app.config["MAX_CONTENT_LENGTH"] = int(
+    os.environ.get("MAX_CONTENT_LENGTH", 1024 * 1024)
+)  # Default 1MB
+RATE_LIMIT = os.environ.get("RATE_LIMIT", "10 per minute")
+ENABLE_SECURITY_HEADERS = (
+    os.environ.get("ENABLE_SECURITY_HEADERS", "true").lower() == "true"
+)
 
 # Security Headers with Flask-Talisman
 if ENABLE_SECURITY_HEADERS:
     # Content Security Policy
     csp = {
-        'default-src': "'self'",
-        'style-src': ["'self'", "'unsafe-inline'"],  # Allow inline styles
-        'img-src': ["'self'", 'https://bondit.services', 'data:'],
-        'script-src': "'self'",
+        "default-src": "'self'",
+        "style-src": ["'self'", "'unsafe-inline'"],  # Allow inline styles
+        "img-src": ["'self'", "https://bondit.services", "data:"],
+        "script-src": "'self'",
     }
 
     Talisman(
@@ -44,9 +48,9 @@ if ENABLE_SECURITY_HEADERS:
         strict_transport_security=True,
         strict_transport_security_max_age=31536000,  # 1 year
         content_security_policy=csp,
-        content_security_policy_nonce_in=['script-src'],
-        frame_options='DENY',
-        referrer_policy='strict-origin-when-cross-origin',
+        content_security_policy_nonce_in=["script-src"],
+        frame_options="DENY",
+        referrer_policy="strict-origin-when-cross-origin",
     )
     logger.info("Security headers enabled")
 
@@ -64,14 +68,14 @@ logger.info("Rate limiting enabled: %s", RATE_LIMIT)
 @app.errorhandler(413)
 def request_entity_too_large(error):  # pylint: disable=unused-argument
     """Handle file size limit exceeded."""
-    max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
+    max_size_mb = app.config["MAX_CONTENT_LENGTH"] / (1024 * 1024)
     logger.warning(
         "Request entity too large",
         extra={
             "action": "request_too_large",
             "ip": get_remote_address(),
             "max_size_mb": max_size_mb,
-        }
+        },
     )
     return (
         render_template(
@@ -90,7 +94,7 @@ def ratelimit_handler(error):  # pylint: disable=unused-argument
         extra={
             "action": "rate_limit_exceeded",
             "ip": get_remote_address(),
-        }
+        },
     )
     return (
         render_template(
@@ -269,7 +273,7 @@ def index():
                 "namespace": namespace,
                 "content_length": len(env_content),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
+            },
         )
 
         env_dict = parse_env(env_content)
@@ -293,7 +297,7 @@ def index():
                 "ip": get_remote_address(),
                 "secret_name": secret_name,
                 "keys_count": len(env_dict),
-            }
+            },
         )
 
     return render_template(
@@ -323,7 +327,7 @@ def download():
             "namespace": namespace,
             "content_length": len(env_content),
             "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        },
     )
 
     env_dict = parse_env(env_content)
@@ -350,7 +354,7 @@ def download():
             "ip": get_remote_address(),
             "secret_name": secret_name,
             "download_filename": safe_filename,
-        }
+        },
     )
 
     return send_file(
