@@ -134,10 +134,12 @@ jobs:
           VERSION="${YEAR}.${MONTH}.${PATCH}"
           DATE_TAG=$(date +'%Y%m%d')
 
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "date_tag=${DATE_TAG}" >> $GITHUB_OUTPUT
-          echo "year=${YEAR}" >> $GITHUB_OUTPUT
-          echo "month=${MONTH}" >> $GITHUB_OUTPUT
+          {
+            echo "version=${VERSION}"
+            echo "date_tag=${DATE_TAG}"
+            echo "year=${YEAR}"
+            echo "month=${MONTH}"
+          } >> "$GITHUB_OUTPUT"
 
           echo "Generated version: ${VERSION}"
 
