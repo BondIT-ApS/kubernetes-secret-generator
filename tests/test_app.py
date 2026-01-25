@@ -6,14 +6,14 @@ from app import (
     parse_env,
     _parse_env_line,
     _remove_inline_comments,
-    _is_valid_k8s_key
+    _is_valid_k8s_key,
 )
 
 
 @pytest.fixture
 def client():
     """Create a test client for the Flask app."""
-    app.config['TESTING'] = True
+    app.config["TESTING"] = True
     with app.test_client() as client:
         yield client
 
@@ -166,7 +166,7 @@ class TestParseEnv:
 
     def test_parse_env_mixed_formats(self):
         """Test parsing mixed formats."""
-        env_content = "KEY1=value1\nKEY2: value2\nKEY3=\"value3\""
+        env_content = 'KEY1=value1\nKEY2: value2\nKEY3="value3"'
         result = parse_env(env_content)
 
         assert len(result) == 3
@@ -203,79 +203,79 @@ class TestRoutes:
 
     def test_index_get(self, client):
         """Test GET request to index route."""
-        response = client.get('/')
+        response = client.get("/")
         assert response.status_code == 200
-        assert b'Kubernetes Secret JSON Generator' in response.data
+        assert b"Kubernetes Secret JSON Generator" in response.data
 
     def test_index_post(self, client):
         """Test POST request to index route."""
         data = {
-            'env_content': 'KEY1=value1\nKEY2=value2',
-            'secret_name': 'test-secret',
-            'namespace': 'test-namespace'
+            "env_content": "KEY1=value1\nKEY2=value2",
+            "secret_name": "test-secret",
+            "namespace": "test-namespace",
         }
-        response = client.post('/', data=data)
+        response = client.post("/", data=data)
 
         assert response.status_code == 200
-        assert b'test-secret' in response.data
-        assert b'test-namespace' in response.data
+        assert b"test-secret" in response.data
+        assert b"test-namespace" in response.data
 
     def test_index_post_with_invalid_data(self, client):
         """Test POST with invalid data."""
         data = {
-            'env_content': 'INVALID LINE WITHOUT DELIMITER',
-            'secret_name': 'test-secret',
-            'namespace': 'default'
+            "env_content": "INVALID LINE WITHOUT DELIMITER",
+            "secret_name": "test-secret",
+            "namespace": "default",
         }
-        response = client.post('/', data=data)
+        response = client.post("/", data=data)
 
         assert response.status_code == 200
 
     def test_download_route(self, client):
         """Test download route."""
         data = {
-            'env_content': 'KEY1=value1\nKEY2=value2',
-            'secret_name': 'test-secret',
-            'namespace': 'test-namespace'
+            "env_content": "KEY1=value1\nKEY2=value2",
+            "secret_name": "test-secret",
+            "namespace": "test-namespace",
         }
-        response = client.post('/download', data=data)
+        response = client.post("/download", data=data)
 
         assert response.status_code == 200
-        assert response.content_type == 'application/json'
+        assert response.content_type == "application/json"
 
         json_data = json.loads(response.data)
-        assert json_data['kind'] == 'Secret'
-        assert json_data['apiVersion'] == 'v1'
-        assert json_data['metadata']['name'] == 'test-secret'
-        assert json_data['metadata']['namespace'] == 'test-namespace'
-        assert 'KEY1' in json_data['data']
-        assert 'KEY2' in json_data['data']
+        assert json_data["kind"] == "Secret"
+        assert json_data["apiVersion"] == "v1"
+        assert json_data["metadata"]["name"] == "test-secret"
+        assert json_data["metadata"]["namespace"] == "test-namespace"
+        assert "KEY1" in json_data["data"]
+        assert "KEY2" in json_data["data"]
 
     def test_download_route_sanitizes_filename(self, client):
         """Test download route sanitizes secret name."""
         data = {
-            'env_content': 'KEY=value',
-            'secret_name': '../../../malicious',
-            'namespace': 'default'
+            "env_content": "KEY=value",
+            "secret_name": "../../../malicious",
+            "namespace": "default",
         }
-        response = client.post('/download', data=data)
+        response = client.post("/download", data=data)
 
         assert response.status_code == 200
-        content_disposition = response.headers.get('Content-Disposition')
-        assert '../' not in content_disposition
+        content_disposition = response.headers.get("Content-Disposition")
+        assert "../" not in content_disposition
 
     def test_download_route_empty_env(self, client):
         """Test download with empty env content."""
         data = {
-            'env_content': '',
-            'secret_name': 'empty-secret',
-            'namespace': 'default'
+            "env_content": "",
+            "secret_name": "empty-secret",
+            "namespace": "default",
         }
-        response = client.post('/download', data=data)
+        response = client.post("/download", data=data)
 
         assert response.status_code == 200
         json_data = json.loads(response.data)
-        assert json_data['data'] == {}
+        assert json_data["data"] == {}
 
 
 class TestIntegration:
@@ -296,29 +296,31 @@ DEBUG=false
 """
 
         data = {
-            'env_content': env_content,
-            'secret_name': 'my-app-secret',
-            'namespace': 'production'
+            "env_content": env_content,
+            "secret_name": "my-app-secret",
+            "namespace": "production",
         }
 
-        response = client.post('/download', data=data)
+        response = client.post("/download", data=data)
         assert response.status_code == 200
 
         json_data = json.loads(response.data)
-        assert json_data['kind'] == 'Secret'
-        assert json_data['type'] == 'Opaque'
-        assert json_data['metadata']['name'] == 'my-app-secret'
-        assert json_data['metadata']['namespace'] == 'production'
+        assert json_data["kind"] == "Secret"
+        assert json_data["type"] == "Opaque"
+        assert json_data["metadata"]["name"] == "my-app-secret"
+        assert json_data["metadata"]["namespace"] == "production"
 
         # Verify all keys are present and base64 encoded
-        assert 'DB_HOST' in json_data['data']
-        assert 'DB_PORT' in json_data['data']
-        assert 'DB_USER' in json_data['data']
-        assert 'DB_PASSWORD' in json_data['data']
-        assert 'APP_ENV' in json_data['data']
-        assert 'DEBUG' in json_data['data']
+        assert "DB_HOST" in json_data["data"]
+        assert "DB_PORT" in json_data["data"]
+        assert "DB_USER" in json_data["data"]
+        assert "DB_PASSWORD" in json_data["data"]
+        assert "APP_ENV" in json_data["data"]
+        assert "DEBUG" in json_data["data"]
 
         # Verify values can be decoded
-        assert base64.b64decode(json_data['data']['DB_HOST']).decode() == 'localhost'
-        assert base64.b64decode(json_data['data']['DB_PORT']).decode() == '5432'
-        assert base64.b64decode(json_data['data']['DB_PASSWORD']).decode() == 'secret123'
+        assert base64.b64decode(json_data["data"]["DB_HOST"]).decode() == "localhost"
+        assert base64.b64decode(json_data["data"]["DB_PORT"]).decode() == "5432"
+        assert (
+            base64.b64decode(json_data["data"]["DB_PASSWORD"]).decode() == "secret123"
+        )
