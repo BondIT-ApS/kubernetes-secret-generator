@@ -6,7 +6,7 @@ wheel==0.46.3
 
 # Security
 flask-talisman==1.1.0
-flask-limiter==3.5.0
+flask-limiter==4.1.1
 
 # Testing
 pytest==9.0.2
