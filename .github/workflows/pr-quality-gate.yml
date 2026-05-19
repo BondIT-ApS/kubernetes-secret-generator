@@ -41,7 +41,7 @@ jobs:
           fi
 
       - name: Post complexity comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const backend = '${{ steps.filter.outputs.backend }}' === 'true';
@@ -208,7 +208,7 @@ jobs:
     if: always()
     steps:
       - name: Post summary comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const backend_changed = '${{ needs.discover-changes.outputs.backend_changed }}' === 'true';
