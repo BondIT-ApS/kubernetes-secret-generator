@@ -1,8 +1,8 @@
 # Core Framework
 flask==3.1.3
-werkzeug==3.1.6
+werkzeug==3.1.8
 markupsafe==3.0.3
-wheel==0.46.3
+wheel==0.47.0
 
 # Security
 flask-talisman==1.1.0
@@ -10,13 +10,13 @@ flask-limiter==4.1.1
 
 # Testing
 pytest==9.0.3
-pytest-cov==7.0.0
+pytest-cov==7.1.0
 pytest-asyncio==1.3.0
 
 # Code Quality
 pylint==4.0.5
 
 # Security Scanning
-bandit==1.9.3
+bandit==1.9.4
 # Note: safety temporarily disabled - pydantic dependency not compatible with Python 3.14
 # Will re-enable once compatibility is resolved
