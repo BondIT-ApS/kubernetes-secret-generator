@@ -9,12 +9,12 @@ flask-talisman==1.1.0
 flask-limiter==4.1.1
 
 # Testing
-pytest==9.0.3
+pytest==9.1.1
 pytest-cov==7.1.0
 pytest-asyncio==1.4.0
 
 # Code Quality
-pylint==4.0.5
+pylint==4.0.6
 # Note: astroid is a transitive dependency of pylint (not directly pinned here).
 # Latest astroid (4.1.2) is resolved automatically when pylint is installed.
 
