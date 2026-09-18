@@ -2,7 +2,7 @@
 flask==3.1.3
 werkzeug==3.1.8
 markupsafe==3.0.3
-wheel==0.47.0
+wheel==0.48.0
 
 # Security
 flask-talisman==1.1.0
@@ -14,9 +14,9 @@ pytest-cov==7.1.0
 pytest-asyncio==1.4.0
 
 # Code Quality
-pylint==4.0.6
+pylint==4.0.8
 # Note: astroid is a transitive dependency of pylint (not directly pinned here).
-# Latest astroid (4.1.2) is resolved automatically when pylint is installed.
+# pylint 4.0.x requires astroid<=4.1.dev0, so pip resolves the newest 4.0.x astroid automatically.
 
 # Security Scanning
 bandit==1.9.4
