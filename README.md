@@ -11,13 +11,15 @@
 
 > **Like building with LEGO blocks** - snap your environment variables into Kubernetes Secrets with perfect precision! 🎯
 
-A lightweight, enterprise-grade Flask web application that seamlessly transforms `.env` files into production-ready Kubernetes Secret JSON manifests. Built with security and simplicity in mind.
+A lightweight, enterprise-grade Flask web application that seamlessly transforms `.env` files into production-ready Kubernetes Secret manifests in JSON or YAML. Built with security and simplicity in mind.
 
 ---
 
 ## ✨ Key Features
 
 **🎨 Flexible Format Support**
+- JSON or YAML output (JSON by default)
+- Optional custom labels and annotations on the secret metadata
 - Handles both `=` and `:` key-value formats
 - Supports quoted values (single and double quotes)
 - Preserves inline comments with intelligent parsing
@@ -36,7 +38,7 @@ A lightweight, enterprise-grade Flask web application that seamlessly transforms
 - Stateless design for horizontal scaling
 
 **✅ Enterprise Quality**
-- 99% test coverage with comprehensive test suite
+- 98% test coverage with comprehensive test suite
 - Pylint score: 10/10
 - Automated CI/CD pipelines
 - SBOM and provenance attestations
@@ -99,8 +101,9 @@ open http://localhost:5000
 1. **Navigate to the web interface** at `http://localhost:5050`
 2. **Paste your `.env` content** into the text area
 3. **Specify the secret name and namespace**
-4. **Click "Generate Secret in JSON"** to preview the output
-5. **Download the JSON file** and apply it to your cluster
+4. **Pick the output format** (JSON or YAML) and optionally add labels/annotations as comma-separated `key=value` pairs (e.g. `app=my-app,env=production`)
+5. **Click "Generate Secret"** to preview the output
+6. **Download the manifest file** and apply it to your cluster
 
 ### Supported `.env` Formats
 
@@ -129,9 +132,9 @@ LOG_LEVEL="INFO"  # Can be DEBUG, INFO, WARN, ERROR
 ### Applying to Kubernetes
 
 ```bash
-# Download the generated JSON
+# Download the generated manifest (JSON or YAML)
 # Apply to your cluster
-kubectl apply -f generated-secret.json
+kubectl apply -f generated-secret.json   # or generated-secret.yaml
 
 # Verify the secret
 kubectl get secret your-secret-name -n your-namespace
@@ -151,8 +154,9 @@ kubectl get secret your-secret-name -n your-namespace -o jsonpath='{.data.DATABA
 │                    🧱 Frontend Layer                        │
 │  ┌────────────────────────────────────────────────────┐    │
 │  │  templates/index.html - Web UI Form                │    │
-│  │  • Input: .env content, secret name, namespace     │    │
-│  │  • Output: JSON preview + download button          │    │
+│  │  • Input: .env content, secret name, namespace,    │    │
+│  │    output format, labels, annotations              │    │
+│  │  • Output: JSON/YAML preview + download button     │    │
 │  └────────────────────────────────────────────────────┘    │
 └────────────────────────┬────────────────────────────────────┘
                          │
@@ -168,6 +172,9 @@ kubectl get secret your-secret-name -n your-namespace -o jsonpath='{.data.DATABA
 │  ┌────────────────────────────────────────────────────┐    │
 │  │  Core Functions:                                   │    │
 │  │  • parse_env()           - Master parser           │    │
+│  │  • parse_metadata_pairs() - Labels/annotations     │    │
+│  │  • build_secret()        - Secret dict builder     │    │
+│  │  • serialize_secret()    - JSON/YAML rendering     │    │
 │  │  • _parse_env_line()     - Regex-based parsing     │    │
 │  │  • _remove_inline_comments() - Comment handling    │    │
 │  │  • _is_valid_k8s_key()   - Validation logic        │    │
@@ -191,7 +198,7 @@ kubectl get secret your-secret-name -n your-namespace -o jsonpath='{.data.DATABA
 - **Backend**: Python 3.11+ with Flask 3.1
 - **Frontend**: HTML5 with vanilla JavaScript
 - **Containerization**: Docker with multi-stage builds
-- **Testing**: pytest with 99% coverage
+- **Testing**: pytest with 98% coverage
 - **Security**: Bandit, CodeQL, secure filename sanitization
 - **CI/CD**: GitHub Actions with quality gates
 
@@ -277,10 +284,10 @@ See [`.vscode/README.md`](.vscode/README.md) for full details.
 
 | Metric | Status | Target |
 |--------|--------|--------|
-| 🧪 Test Coverage | 99% | ≥70% |
+| 🧪 Test Coverage | 98% | ≥70% |
 | ✨ Pylint Score | 10/10 | 10/10 |
 | 🛡️ Security Scans | ✅ Passing | All passing |
-| 📦 Tests Passing | 35/35 (100%) | 100% |
+| 📦 Tests Passing | 54/54 (100%) | 100% |
 | 🐳 Docker Build | ✅ Success | Success |
 
 ### CI/CD Pipeline
@@ -374,9 +381,10 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 - [x] Multi-format .env support (=, :, quotes)
 - [x] Kubernetes key validation
 - [x] Docker multi-platform builds
-- [x] 99% test coverage
+- [x] 98% test coverage
 - [x] Automated CI/CD pipelines
-- [ ] YAML output format support
+- [x] YAML output format support
+- [x] Custom labels and annotations
 - [ ] Batch conversion API endpoint
 - [ ] Secret rotation recommendations
 - [ ] Integration with secret management tools (Vault, AWS Secrets Manager)

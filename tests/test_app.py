@@ -1,9 +1,15 @@
 import base64
 import json
+
 import pytest
+import yaml
+
 from app import (
     app,
+    build_secret,
     parse_env,
+    parse_metadata_pairs,
+    serialize_secret,
     _parse_env_line,
     _remove_inline_comments,
     _is_valid_k8s_key,
@@ -198,6 +204,104 @@ class TestParseEnv:
         assert base64.b64decode(result["KEY"]).decode() == "p@ssw0rd!"
 
 
+class TestParseMetadataPairs:
+    """Tests for parse_metadata_pairs function."""
+
+    def test_parse_basic_pairs(self):
+        """Test parsing comma-separated key=value pairs."""
+        result = parse_metadata_pairs("app=my-app,env=production")
+        assert result == {"app": "my-app", "env": "production"}
+
+    def test_parse_pairs_with_whitespace(self):
+        """Test whitespace around pairs, keys and values is stripped."""
+        result = parse_metadata_pairs(" app = my-app , env = production ")
+        assert result == {"app": "my-app", "env": "production"}
+
+    def test_parse_empty_input(self):
+        """Test empty and None input return an empty dict."""
+        assert parse_metadata_pairs("") == {}
+        assert parse_metadata_pairs(None) == {}
+
+    def test_parse_pair_without_equals_skipped(self):
+        """Test pairs without '=' are skipped."""
+        result = parse_metadata_pairs("app=my-app,invalid")
+        assert result == {"app": "my-app"}
+
+    def test_parse_invalid_key_skipped(self):
+        """Test pairs with invalid keys are skipped."""
+        result = parse_metadata_pairs("bad key=value,app=my-app")
+        assert result == {"app": "my-app"}
+
+    def test_parse_prefixed_key(self):
+        """Test keys with a '/'-separated prefix are accepted."""
+        result = parse_metadata_pairs("app.kubernetes.io/name=my-app")
+        assert result == {"app.kubernetes.io/name": "my-app"}
+
+    def test_parse_value_with_equals(self):
+        """Test values containing '=' are kept intact."""
+        result = parse_metadata_pairs("note=a=b")
+        assert result == {"note": "a=b"}
+
+    def test_parse_empty_value(self):
+        """Test empty values are allowed."""
+        result = parse_metadata_pairs("flag=")
+        assert result == {"flag": ""}
+
+
+class TestBuildSecret:
+    """Tests for build_secret function."""
+
+    def test_build_secret_defaults(self):
+        """Test secret dict without labels/annotations."""
+        secret = build_secret("my-secret", "default", {"KEY": "dmFsdWU="})
+        assert secret == {
+            "kind": "Secret",
+            "apiVersion": "v1",
+            "metadata": {"name": "my-secret", "namespace": "default"},
+            "type": "Opaque",
+            "data": {"KEY": "dmFsdWU="},
+        }
+
+    def test_build_secret_with_labels_and_annotations(self):
+        """Test labels and annotations are included in metadata."""
+        secret = build_secret(
+            "my-secret",
+            "default",
+            {},
+            labels={"app": "my-app"},
+            annotations={"owner": "team"},
+        )
+        assert secret["metadata"]["labels"] == {"app": "my-app"}
+        assert secret["metadata"]["annotations"] == {"owner": "team"}
+
+    def test_build_secret_omits_empty_metadata_maps(self):
+        """Test empty labels/annotations dicts are omitted from metadata."""
+        secret = build_secret("my-secret", "default", {}, labels={}, annotations={})
+        assert "labels" not in secret["metadata"]
+        assert "annotations" not in secret["metadata"]
+
+
+class TestSerializeSecret:
+    """Tests for serialize_secret function."""
+
+    def test_serialize_json(self):
+        """Test JSON serialization matches the original format."""
+        secret = build_secret("my-secret", "default", {"KEY": "dmFsdWU="})
+        output = serialize_secret(secret, "json")
+        assert output == json.dumps(secret, indent=4)
+
+    def test_serialize_yaml_round_trip(self):
+        """Test YAML serialization can be loaded back to the same dict."""
+        secret = build_secret("my-secret", "default", {"KEY": "dmFsdWU="})
+        output = serialize_secret(secret, "yaml")
+        assert yaml.safe_load(output) == secret
+
+    def test_serialize_unknown_format_falls_back_to_json(self):
+        """Test unknown formats fall back to JSON."""
+        secret = build_secret("my-secret", "default", {})
+        assert serialize_secret(secret, "xml") == json.dumps(secret, indent=4)
+
+
 class TestRoutes:
     """Tests for Flask routes."""
 
@@ -205,7 +309,7 @@ class TestRoutes:
         """Test GET request to index route."""
         response = client.get("/")
         assert response.status_code == 200
-        assert b"Kubernetes Secret JSON Generator" in response.data
+        assert b"Kubernetes Secret Generator" in response.data
 
     def test_index_post(self, client):
         """Test POST request to index route."""
@@ -276,6 +380,94 @@ class TestRoutes:
         assert response.status_code == 200
         json_data = json.loads(response.data)
         assert json_data["data"] == {}
+
+    def test_download_json_default_unchanged(self, client):
+        """Test download without a format field keeps the original JSON output."""
+        data = {
+            "env_content": "KEY=value",
+            "secret_name": "test-secret",
+            "namespace": "default",
+        }
+        response = client.post("/download", data=data)
+
+        assert response.status_code == 200
+        assert response.content_type == "application/json"
+        assert ".json" in response.headers.get("Content-Disposition")
+
+        json_data = json.loads(response.data)
+        assert json_data["metadata"] == {
+            "name": "test-secret",
+            "namespace": "default",
+        }
+        assert "labels" not in json_data["metadata"]
+        assert "annotations" not in json_data["metadata"]
+
+    def test_download_yaml_format(self, client):
+        """Test download with YAML format."""
+        data = {
+            "env_content": "KEY1=value1\nKEY2=value2",
+            "secret_name": "test-secret",
+            "namespace": "test-namespace",
+            "format": "yaml",
+        }
+        response = client.post("/download", data=data)
+
+        assert response.status_code == 200
+        assert response.content_type == "application/yaml"
+        assert ".yaml" in response.headers.get("Content-Disposition")
+
+        yaml_data = yaml.safe_load(response.data)
+        assert yaml_data["kind"] == "Secret"
+        assert yaml_data["apiVersion"] == "v1"
+        assert yaml_data["metadata"]["name"] == "test-secret"
+        assert yaml_data["metadata"]["namespace"] == "test-namespace"
+        assert base64.b64decode(yaml_data["data"]["KEY1"]).decode() == "value1"
+
+    def test_download_invalid_format_falls_back_to_json(self, client):
+        """Test download with an unknown format falls back to JSON."""
+        data = {
+            "env_content": "KEY=value",
+            "secret_name": "test-secret",
+            "namespace": "default",
+            "format": "xml",
+        }
+        response = client.post("/download", data=data)
+
+        assert response.status_code == 200
+        assert response.content_type == "application/json"
+        json.loads(response.data)
+
+    def test_download_with_labels_and_annotations(self, client):
+        """Test download includes parsed labels and annotations."""
+        data = {
+            "env_content": "KEY=value",
+            "secret_name": "test-secret",
+            "namespace": "default",
+            "labels": "app=my-app,env=production",
+            "annotations": "owner=platform-team",
+        }
+        response = client.post("/download", data=data)
+
+        assert response.status_code == 200
+        json_data = json.loads(response.data)
+        assert json_data["metadata"]["labels"] == {
+            "app": "my-app",
+            "env": "production",
+        }
+        assert json_data["metadata"]["annotations"] == {"owner": "platform-team"}
+
+    def test_index_post_yaml_format(self, client):
+        """Test POST to index with YAML format renders YAML output."""
+        data = {
+            "env_content": "KEY=value",
+            "secret_name": "test-secret",
+            "namespace": "default",
+            "format": "yaml",
+        }
+        response = client.post("/", data=data)
+
+        assert response.status_code == 200
+        assert b"kind: Secret" in response.data
 
 
 class TestIntegration:
