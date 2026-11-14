@@ -287,7 +287,7 @@ See [`.vscode/README.md`](.vscode/README.md) for full details.
 | 🧪 Test Coverage | 98% | ≥70% |
 | ✨ Pylint Score | 10/10 | 10/10 |
 | 🛡️ Security Scans | ✅ Passing | All passing |
-| 📦 Tests Passing | 54/54 (100%) | 100% |
+| 📦 Tests Passing | 61/61 (100%) | 100% |
 | 🐳 Docker Build | ✅ Success | Success |
 
 ### CI/CD Pipeline

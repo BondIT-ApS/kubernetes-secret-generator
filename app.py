@@ -251,37 +251,80 @@ def _is_valid_k8s_key(key):
     return bool(re.match(pattern, key))
 
 
+# Kubernetes "qualified name" segment: max 63 chars, alphanumeric at both
+# ends, '-', '_' and '.' allowed in between. Used for label/annotation key
+# names and for label values.
+_NAME_SEGMENT_RE = re.compile(r"^[A-Za-z0-9]([-A-Za-z0-9_.]*[A-Za-z0-9])?$")
+# Optional key prefix: a lowercase DNS subdomain (e.g. app.kubernetes.io).
+_DNS_PREFIX_RE = re.compile(
+    r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+)
+# Split annotation input only on commas that start a new key=value pair,
+# so annotation values may themselves contain commas.
+_PAIR_SPLIT_RE = re.compile(r",(?=\s*[A-Za-z0-9._/-]+\s*=)")
+
+
 def _is_valid_metadata_key(key):
-    """Loosely validate a Kubernetes label/annotation key.
+    """Validate a Kubernetes label/annotation key (qualified name).
 
-    Allows alphanumerics, '.', '-' and '_', with an optional prefix
-    separated by a single '/' (e.g. app.kubernetes.io/name).
+    An optional DNS-subdomain prefix (lowercase, max 253 chars) separated by
+    a single '/', followed by a name segment of at most 63 chars that starts
+    and ends with an alphanumeric character (e.g. app.kubernetes.io/name).
     """
-    if not key or len(key) > 317:  # 253 char prefix + '/' + 63 char name
+    if not key or key.count("/") > 1:
         return False
-    return bool(re.match(r"^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)?$", key))
+    if "/" in key:
+        prefix, name = key.split("/")
+        if not prefix or len(prefix) > 253 or not _DNS_PREFIX_RE.match(prefix):
+            return False
+    else:
+        name = key
+    return len(name) <= 63 and bool(_NAME_SEGMENT_RE.match(name))
 
 
-def parse_metadata_pairs(raw_pairs):
+def _is_valid_label_value(value):
+    """Validate a Kubernetes label value.
+
+    Must be empty, or at most 63 chars starting and ending alphanumeric.
+    """
+    if value == "":
+        return True
+    return len(value) <= 63 and bool(_NAME_SEGMENT_RE.match(value))
+
+
+def parse_metadata_pairs(raw_pairs, validate_values=False):
     """Parse comma-separated key=value pairs into a metadata dict.
 
     Example input: "app=my-app, env=production".
     Pairs without '=' or with an invalid key are skipped; values may be
     empty and may contain '=' (the split happens on the first '=').
+
+    With validate_values=True (labels), entries split on every comma and
+    values must be valid Kubernetes label values or the pair is skipped.
+    Without it (annotations), entries split only on commas that start a new
+    key=value pair, so free-text values may contain commas.
     """
     metadata = {}
     if not raw_pairs:
         return metadata
 
-    for pair in raw_pairs.split(","):
+    if validate_values:
+        entries = raw_pairs.split(",")
+    else:
+        entries = _PAIR_SPLIT_RE.split(raw_pairs)
+
+    for pair in entries:
         pair = pair.strip()
         if not pair or "=" not in pair:
             continue
         key, value = pair.split("=", 1)
         key = key.strip()
+        value = value.strip()
         if not _is_valid_metadata_key(key):
             continue
-        metadata[key] = value.strip()
+        if validate_values and not _is_valid_label_value(value):
+            continue
+        metadata[key] = value
 
     return metadata
 
@@ -356,7 +399,7 @@ def index():
             secret_name,
             namespace,
             env_dict,
-            labels=parse_metadata_pairs(labels_input),
+            labels=parse_metadata_pairs(labels_input, validate_values=True),
             annotations=parse_metadata_pairs(annotations_input),
         )
         manifest_output = serialize_secret(secret, output_format)
@@ -412,7 +455,9 @@ def download():
         secret_name,
         namespace,
         env_dict,
-        labels=parse_metadata_pairs(request.form.get("labels", "")),
+        labels=parse_metadata_pairs(
+            request.form.get("labels", ""), validate_values=True
+        ),
         annotations=parse_metadata_pairs(request.form.get("annotations", "")),
     )
 

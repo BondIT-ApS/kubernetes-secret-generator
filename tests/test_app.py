@@ -223,9 +223,56 @@ class TestParseMetadataPairs:
         assert parse_metadata_pairs(None) == {}
 
     def test_parse_pair_without_equals_skipped(self):
-        """Test pairs without '=' are skipped."""
-        result = parse_metadata_pairs("app=my-app,invalid")
+        """Test segments without '=' are skipped (or absorbed into values)."""
+        # A leading segment without '=' is skipped in both modes.
+        assert parse_metadata_pairs("invalid,app=my-app") == {"app": "my-app"}
+        # In label mode every comma separates pairs, so trailing junk is dropped.
+        result = parse_metadata_pairs("app=my-app,invalid", validate_values=True)
         assert result == {"app": "my-app"}
+
+    def test_annotation_value_keeps_commas(self):
+        """Test annotation values keep commas that don't start a new pair."""
+        result = parse_metadata_pairs("description=Deployed by Martin, do not delete")
+        assert result == {"description": "Deployed by Martin, do not delete"}
+
+    def test_annotation_value_comma_before_new_pair_splits(self):
+        """Test a comma followed by key= still starts a new pair."""
+        result = parse_metadata_pairs("a=1, b=2")
+        assert result == {"a": "1", "b": "2"}
+
+    def test_label_mode_rejects_invalid_values(self):
+        """Test label values must be valid Kubernetes label values."""
+        result = parse_metadata_pairs(
+            "owner=platform team,app=my-app", validate_values=True
+        )
+        assert result == {"app": "my-app"}
+        too_long = "v" * 64
+        assert parse_metadata_pairs(f"app={too_long}", validate_values=True) == {}
+        assert parse_metadata_pairs("app=-bad-", validate_values=True) == {}
+
+    def test_label_mode_allows_empty_and_valid_values(self):
+        """Test empty and well-formed label values are accepted."""
+        result = parse_metadata_pairs("flag=,app=my_app.v1", validate_values=True)
+        assert result == {"flag": "", "app": "my_app.v1"}
+
+    def test_invalid_keys_rejected(self):
+        """Test keys Kubernetes would reject are skipped."""
+        assert parse_metadata_pairs("-app=x") == {}
+        assert parse_metadata_pairs("app-=x") == {}
+        assert parse_metadata_pairs("a/b/c=x") == {}
+        assert parse_metadata_pairs("App.Kubernetes.IO/name=x") == {}
+        assert parse_metadata_pairs("/name=x") == {}
+        long_name = "k" * 64
+        assert parse_metadata_pairs(f"{long_name}=x") == {}
+
+    def test_boundary_keys_accepted(self):
+        """Test keys at the limits are accepted."""
+        name_63 = "k" * 63
+        assert parse_metadata_pairs(f"{name_63}=x") == {name_63: "x"}
+        prefix_253 = ("a" * 61 + ".") * 4 + "a" * 5  # 253 chars
+        assert len(prefix_253) == 253
+        result = parse_metadata_pairs(f"{prefix_253}/name=x")
+        assert result == {f"{prefix_253}/name": "x"}
 
     def test_parse_invalid_key_skipped(self):
         """Test pairs with invalid keys are skipped."""
@@ -455,6 +502,22 @@ class TestRoutes:
             "env": "production",
         }
         assert json_data["metadata"]["annotations"] == {"owner": "platform-team"}
+
+    def test_download_annotation_value_with_comma(self, client):
+        """Test an annotation value containing a comma survives intact."""
+        data = {
+            "env_content": "KEY=value",
+            "secret_name": "test-secret",
+            "namespace": "default",
+            "annotations": "note=keep this, and this too",
+        }
+        response = client.post("/download", data=data)
+
+        assert response.status_code == 200
+        json_data = json.loads(response.data)
+        assert json_data["metadata"]["annotations"] == {
+            "note": "keep this, and this too"
+        }
 
     def test_index_post_yaml_format(self, client):
         """Test POST to index with YAML format renders YAML output."""
