@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kubernetes Secret JSON Generator</title>
+    <title>Kubernetes Secret Generator</title>
     <link rel="icon" href="https://bondit.services/wp-content/uploads/2024/04/favcion-bondit.webp" type="image/x-icon">
     <style>
         body {
@@ -22,7 +22,7 @@
     </style>
 </head>
 <body>
-    <h2>Kubernetes Secret JSON Generator</h2>
+    <h2>Kubernetes Secret Generator</h2>
     <form method="post">
         <label for="secret_name">Meta Name:</label>
         <input type="text" id="secret_name" name="secret_name" value="{{ secret_name }}" required>
@@ -30,21 +30,36 @@
         <label for="namespace">Meta Namespace:</label>
         <input type="text" id="namespace" name="namespace" value="{{ namespace }}" required>
         <br><br>
+        <label for="format">Output Format:</label>
+        <select id="format" name="format">
+            <option value="json" {% if output_format != 'yaml' %}selected{% endif %}>JSON</option>
+            <option value="yaml" {% if output_format == 'yaml' %}selected{% endif %}>YAML</option>
+        </select>
+        <br><br>
+        <label for="labels">Labels (optional, comma-separated key=value):</label>
+        <input type="text" id="labels" name="labels" value="{{ labels }}" placeholder="app=my-app,env=production">
+        <br><br>
+        <label for="annotations">Annotations (optional, comma-separated key=value):</label>
+        <input type="text" id="annotations" name="annotations" value="{{ annotations }}" placeholder="owner=platform-team">
+        <br><br>
         <label for="env_content">Paste .env content:</label>
         <textarea id="env_content" name="env_content"></textarea>
         <br>
-        <button type="submit">Generate Secret in JSON</button>
+        <button type="submit">Generate Secret</button>
     </form>
-    
-    {% if json_output %}
+
+    {% if manifest_output %}
     <h3>Generated Kubernetes Secret Manifest:</h3>
-    <pre>{{ json_output }}</pre>
-    
+    <pre>{{ manifest_output }}</pre>
+
     <form action="/download" method="post">
         <input type="hidden" name="env_content" value="{{ request.form['env_content'] }}">
         <input type="hidden" name="secret_name" value="{{ request.form['secret_name'] }}">
         <input type="hidden" name="namespace" value="{{ request.form['namespace'] }}">
-        <button type="submit">Download JSON</button>
+        <input type="hidden" name="format" value="{{ output_format }}">
+        <input type="hidden" name="labels" value="{{ labels }}">
+        <input type="hidden" name="annotations" value="{{ annotations }}">
+        <button type="submit">Download {{ 'YAML' if output_format == 'yaml' else 'JSON' }}</button>
     </form>
     {% endif %}
 

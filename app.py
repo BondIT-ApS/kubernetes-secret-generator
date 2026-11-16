@@ -6,6 +6,7 @@ import re
 from datetime import datetime, timezone
 from io import BytesIO
 
+import yaml
 from flask import Flask, request, render_template, send_file
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -250,18 +251,134 @@ def _is_valid_k8s_key(key):
     return bool(re.match(pattern, key))
 
 
+# Kubernetes "qualified name" segment: max 63 chars, alphanumeric at both
+# ends, '-', '_' and '.' allowed in between. Used for label/annotation key
+# names and for label values.
+_NAME_SEGMENT_RE = re.compile(r"^[A-Za-z0-9]([-A-Za-z0-9_.]*[A-Za-z0-9])?$")
+# Optional key prefix: a lowercase DNS subdomain (e.g. app.kubernetes.io).
+_DNS_PREFIX_RE = re.compile(
+    r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+)
+# Split annotation input only on commas that start a new key=value pair,
+# so annotation values may themselves contain commas.
+_PAIR_SPLIT_RE = re.compile(r",(?=\s*[A-Za-z0-9._/-]+\s*=)")
+
+
+def _is_valid_metadata_key(key):
+    """Validate a Kubernetes label/annotation key (qualified name).
+
+    An optional DNS-subdomain prefix (lowercase, max 253 chars) separated by
+    a single '/', followed by a name segment of at most 63 chars that starts
+    and ends with an alphanumeric character (e.g. app.kubernetes.io/name).
+    """
+    if not key or key.count("/") > 1:
+        return False
+    if "/" in key:
+        prefix, name = key.split("/")
+        if not prefix or len(prefix) > 253 or not _DNS_PREFIX_RE.match(prefix):
+            return False
+    else:
+        name = key
+    return len(name) <= 63 and bool(_NAME_SEGMENT_RE.match(name))
+
+
+def _is_valid_label_value(value):
+    """Validate a Kubernetes label value.
+
+    Must be empty, or at most 63 chars starting and ending alphanumeric.
+    """
+    if value == "":
+        return True
+    return len(value) <= 63 and bool(_NAME_SEGMENT_RE.match(value))
+
+
+def parse_metadata_pairs(raw_pairs, validate_values=False):
+    """Parse comma-separated key=value pairs into a metadata dict.
+
+    Example input: "app=my-app, env=production".
+    Pairs without '=' or with an invalid key are skipped; values may be
+    empty and may contain '=' (the split happens on the first '=').
+
+    With validate_values=True (labels), entries split on every comma and
+    values must be valid Kubernetes label values or the pair is skipped.
+    Without it (annotations), entries split only on commas that start a new
+    key=value pair, so free-text values may contain commas.
+    """
+    metadata = {}
+    if not raw_pairs:
+        return metadata
+
+    if validate_values:
+        entries = raw_pairs.split(",")
+    else:
+        entries = _PAIR_SPLIT_RE.split(raw_pairs)
+
+    for pair in entries:
+        pair = pair.strip()
+        if not pair or "=" not in pair:
+            continue
+        key, value = pair.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not _is_valid_metadata_key(key):
+            continue
+        if validate_values and not _is_valid_label_value(value):
+            continue
+        metadata[key] = value
+
+    return metadata
+
+
+def build_secret(secret_name, namespace, env_dict, labels=None, annotations=None):
+    """Build a Kubernetes Opaque Secret manifest as a plain dict.
+
+    Empty labels/annotations maps are omitted from the metadata.
+    """
+    metadata = {"name": secret_name, "namespace": namespace}
+    if labels:
+        metadata["labels"] = labels
+    if annotations:
+        metadata["annotations"] = annotations
+
+    return {
+        "kind": "Secret",
+        "apiVersion": "v1",
+        "metadata": metadata,
+        "type": "Opaque",
+        "data": env_dict,
+    }
+
+
+def serialize_secret(secret, output_format):
+    """Serialize a secret dict as JSON (default) or YAML."""
+    if output_format == "yaml":
+        return yaml.safe_dump(secret, sort_keys=False, default_flow_style=False)
+    return json.dumps(secret, indent=4)
+
+
+def _get_output_format(form):
+    """Read the requested output format from a form, defaulting to JSON."""
+    output_format = form.get("format", "json").strip().lower()
+    return output_format if output_format in ("json", "yaml") else "json"
+
+
 @app.route("/", methods=["GET", "POST"])
 @limiter.limit("20 per minute")  # More lenient for main page
 def index():
-    json_output = None
-    file_download = None
+    manifest_output = None
     secret_name = ""  # nosec B105 - Not a password, just form field initialization
     namespace = ""
+    labels_input = ""
+    annotations_input = ""
+    output_format = "json"
 
     if request.method == "POST":
         env_content = request.form.get("env_content", "")
         secret_name = request.form.get("secret_name", "my-secret")
         namespace = request.form.get("namespace", "default")
+        labels_input = request.form.get("labels", "")
+        annotations_input = request.form.get("annotations", "")
+        output_format = _get_output_format(request.form)
 
         # Audit log: Secret generation request
         logger.info(
@@ -271,23 +388,21 @@ def index():
                 "ip": get_remote_address(),
                 "secret_name": secret_name,
                 "namespace": namespace,
+                "output_format": output_format,
                 "content_length": len(env_content),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             },
         )
 
         env_dict = parse_env(env_content)
-        secret_json = {
-            "kind": "Secret",
-            "apiVersion": "v1",
-            "metadata": {"name": secret_name, "namespace": namespace},
-            "type": "Opaque",
-            "data": env_dict,
-        }
-
-        json_output = json.dumps(secret_json, indent=4)
-        file_download = BytesIO(json_output.encode())
-        file_download.seek(0)
+        secret = build_secret(
+            secret_name,
+            namespace,
+            env_dict,
+            labels=parse_metadata_pairs(labels_input, validate_values=True),
+            annotations=parse_metadata_pairs(annotations_input),
+        )
+        manifest_output = serialize_secret(secret, output_format)
 
         # Audit log: Success
         logger.info(
@@ -302,9 +417,12 @@ def index():
 
     return render_template(
         "index.html",
-        json_output=json_output,
+        manifest_output=manifest_output,
         secret_name=secret_name,
         namespace=namespace,
+        labels=labels_input,
+        annotations=annotations_input,
+        output_format=output_format,
     )
 
 
@@ -316,6 +434,7 @@ def download():
         request.form.get("secret_name", "my-secret")
     )  # Sanitize the secret name
     namespace = request.form.get("namespace", "default")
+    output_format = _get_output_format(request.form)
 
     # Audit log: Download request
     logger.info(
@@ -325,26 +444,32 @@ def download():
             "ip": get_remote_address(),
             "secret_name": secret_name,
             "namespace": namespace,
+            "output_format": output_format,
             "content_length": len(env_content),
             "timestamp": datetime.now(timezone.utc).isoformat(),
         },
     )
 
     env_dict = parse_env(env_content)
-    secret_json = {
-        "kind": "Secret",
-        "apiVersion": "v1",
-        "metadata": {"name": secret_name, "namespace": namespace},
-        "type": "Opaque",
-        "data": env_dict,
-    }
+    secret = build_secret(
+        secret_name,
+        namespace,
+        env_dict,
+        labels=parse_metadata_pairs(
+            request.form.get("labels", ""), validate_values=True
+        ),
+        annotations=parse_metadata_pairs(request.form.get("annotations", "")),
+    )
 
-    json_output = json.dumps(secret_json, indent=4)
-    file_download = BytesIO(json_output.encode())
+    output = serialize_secret(secret, output_format)
+    file_download = BytesIO(output.encode())
     file_download.seek(0)
 
+    extension = "yaml" if output_format == "yaml" else "json"
+    mimetype = "application/yaml" if output_format == "yaml" else "application/json"
+
     # Ensure the filename is safe
-    safe_filename = secure_filename(f"{secret_name}.json")
+    safe_filename = secure_filename(f"{secret_name}.{extension}")
 
     # Audit log: Success
     logger.info(
@@ -359,7 +484,7 @@ def download():
 
     return send_file(
         file_download,
-        mimetype="application/json",
+        mimetype=mimetype,
         as_attachment=True,
         download_name=safe_filename,
     )
